@@ -1,6 +1,7 @@
 const axios = require('axios');
 const signRequest = require('../utils/signRequest');
 const pool = require('../../db');
+const { propfind } = require('../routes/market');
 
 const BASE_URL = 'https://api.exchange.coinbase.com';
 const API_KEY = process.env.COINBASE_API_KEY;
@@ -14,6 +15,29 @@ async function savePriceToDb(product_id, price, bid, ask) {
      [product_id, price, bid, ask]
   );
 }
+
+async function getPriceHistory(req, res) {
+  try {
+    const { product_id = 'BTC-USD', limit = 50 } = req.query;
+
+    const query = `
+    SELECT *
+    FROM price_history
+    WHERE product_id = $1
+    ORDER BY id DESC
+    LIMIT $2
+    `;
+    const values = [product_id, limit];
+
+    const result = await pool.query(query, values);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to retrieve price history" });
+  }
+}
+
 
 
 async function getMarketPrice(req, res) {
@@ -48,4 +72,4 @@ async function getMarketPrice(req, res) {
    }
  }
 
-module.exports = { getMarketPrice };
+module.exports = { getMarketPrice, getPriceHistory };

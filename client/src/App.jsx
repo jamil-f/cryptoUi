@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react';
 
 
 function App() {
@@ -11,7 +11,7 @@ function App() {
     const fetchData = () => {
       fetch('http://localhost:3001/api/market-price?product_id=BTC-USD')
         .then((response) => response.json())
-        .then((data) => setBtcData(data))
+        .then((data) => setBtcData((prev) => ({ ...prev, ...data })))
         .catch((err) => console.error(err));
 
       fetch('http://localhost:3001/api/market-price?product_id=JASMY-USD')
@@ -23,6 +23,11 @@ function App() {
         .then((res) => res.json())
         .then((data) => setSolData(data))
         .catch((err) => console.error(err));
+      
+        fetch('http://localhost:3001/api/rsi-trade?product_id=BTC-USD')
+        .then((response) => response.json())
+        .then((data) => setBtcData((prev) => ({ ...prev, rsi: data.rsi })))
+        .catch((err) => console.error(err));
     };
 
     // Initial fetch as soon as the component mounts
@@ -31,7 +36,7 @@ function App() {
     // Now set an interval to fetch every 5 seconds (5000 ms)
     const intervalId = setInterval(() => {
       fetchData();
-    }, 3000);
+    }, 9000);
 
     // Cleanup interval on component unmount
     return () => clearInterval(intervalId);
@@ -45,6 +50,7 @@ function App() {
       <p>Price: {btcData.price}</p>
       <p>Bid: {btcData.bid}</p>
       <p>Ask: {btcData.ask}</p>
+      <p>RSI: {btcData.rsi ?? 'Calculating...'}</p>
 
       <hr />
 
