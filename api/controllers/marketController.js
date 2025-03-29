@@ -8,6 +8,8 @@ const API_KEY = process.env.COINBASE_API_KEY;
 const API_SECRET = process.env.COINBASE_API_SECRET;
 const PASSPHRASE = process.env.COINBASE_PASSPHRASE;
 
+
+//Saves price to Database
 async function savePriceToDb(product_id, price, bid, ask) {
   await pool.query(
     `INSERT INTO price_history (product_id, price, bid, ask)
@@ -16,6 +18,8 @@ async function savePriceToDb(product_id, price, bid, ask) {
   );
 }
 
+
+// Retrieves Price History from Database
 async function getPriceHistory(req, res) {
   try {
     const { product_id = 'BTC-USD', limit = 50 } = req.query;
@@ -39,7 +43,7 @@ async function getPriceHistory(req, res) {
 }
 
 
-
+// This function get's market price on crypto from CoinbaseExchange API
 async function getMarketPrice(req, res) {
   try {
     const { product_id = 'BTC-USD' } = req.query;

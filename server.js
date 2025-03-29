@@ -4,7 +4,9 @@ const cors = require('cors');
 
 const marketRoutes = require('./api/routes/market');
 const tradeRoutes = require('./api/routes/trade');
-const { scheduleRSITrades } = require('./api/controllers/scheduler');
+const accountRoutes = require('./api/routes/account')
+// const { scheduleRSITrades } = require('./api/controllers/scheduler');
+
 
 const app = express();
 app.use(cors());
@@ -13,7 +15,9 @@ app.use(cors());
 app.use('/api', marketRoutes);
 app.use('/api', tradeRoutes);
 
-scheduleRSITrades();
+app.use('/api/accounts', accountRoutes)
+
+// scheduleRSITrades();
 
 
 const PORT = process.env.PORT || 3001;

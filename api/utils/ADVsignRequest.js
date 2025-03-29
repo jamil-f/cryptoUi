@@ -1,8 +1,8 @@
 const crypto = require ('crypto');
-const API_SECRET = process.env.COINBASE_API_SECRET;
+const API_SECRET = process.env.COINBASE_ADV_API_SECRET;
 
 module.exports = function ADVsignRequest (timestamp, method, requestPath, body = '') {
-    const message = timestamp + method + requestPath + body;
+    const message = timestamp + method.toUpperCase() + requestPath + body;
     const key = Buffer.from(API_SECRET, 'base64');
     return crypto
       .createHmac('sha256', key)

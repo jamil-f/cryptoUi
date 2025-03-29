@@ -2,10 +2,12 @@ const axios  = require('axios');
 const pool = require('../../db');
 const signRequest = require('../utils/signRequest');
 const ADVsignRequest = require('../utils/ADVsignRequest');
-const BASE_ADV_URL = 'https://api.coinbase.com/api/v3';
-// 'https://api.exchange.coinbase.com';
-const API_KEY = process.env.COINBASE_API_KEY;
-const PASSPHRASE = process.env.COINBASE_PASSPHRASE;
+const generateJwt = require('../utils/jwAuth');
+const BASE_ADV_URL = 'https://api.coinbase.com';
+const API_KEY = (process.env.COINBASE_ADV_API_KEY || '').replace(/^"|"$/g, '');
+let privateKeyPem = (process.env.COINBASE_ADV_API_SECRET || '').replace(/^"|"$/g, '');
+privateKeyPem = privateKeyPem.replace(/\\n/g, '\n');
+
 
 //RSI Calculations
 
@@ -61,29 +63,41 @@ async function placeOrder(side, product_id, size) {
   try {
     const timestamp = Math.floor(Date.now() / 1000);
     const method = 'POST';
-    const requestPath = '/brokerage/orders';
+
+    // MUST include `/api/v3` in the path for advanced trade
+    const requestPath = '/api/v3/brokerage/orders';
+
+    // Advanced Trade expects side = "BUY" or "SELL" (uppercase)
     const bodyObj = {
       product_id,
-      side,   // "BUY" or "SELL" in advanced trade
+      side: side.toUpperCase(), // "BUY" or "SELL"
       order_configuration: {
-        market_market_ioc: {
+        market_market: {
           base_size: size,
         },
       },
     };
 
     const bodyJSON = JSON.stringify(bodyObj);
-    const signature = ADVsignRequest(timestamp, method, requestPath, bodyJSON);
+
+    console.log('Signing message:', timestamp + method.toUpperCase() + requestPath + bodyJSON);
+
+    const token = generateJwt(privateKeyPem);
+    console.log("generated jwt:", token);
 
     const headers = {
-      'CB-ACCESS-KEY': process.env.COINBASE_API_KEY,
-      'CB-ACCESS-SIGN': signature,
-      'CB-ACCESS-TIMESTAMP': timestamp.toString(),
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
 
-    const response = await axios.post(BASE_ADV_URL + requestPath, bodyObj, { headers });
-    return response.data;
+
+    const response = await axios.post(
+      BASE_ADV_URL + requestPath,
+      bodyJSON,
+      { headers }
+    );
+
+    return response.data; // Will contain success, order_id, etc.
   } catch (error) {
     console.error('Failed to place order', error.response?.data || error);
     throw error;
@@ -107,23 +121,34 @@ async function rsiTradingLogicInternal(product_id) {
     let orderResult = null;
   
     // Decide buy/sell
-    if (rsi < oversoldThreshold) {
-      console.log('RSI indicates oversold, placing BUY order...');
-      orderResult = await placeOrder('buy', product_id, '0.001');
-      console.log('Buy order result:', orderResult);
-    } else if (rsi > overboughtThreshold) {
-      console.log('RSI indicates overbought, placing SELL order...');
-      orderResult = await placeOrder('sell', product_id, '0.001');
-      console.log('Sell order result:', orderResult);
-    }
+    // if (rsi < oversoldThreshold) {
+    //   console.log('RSI indicates oversold, placing BUY order...');
+    //   orderResult = await placeOrder('buy', product_id, '0.001');
+    //   console.log('Buy order result:', orderResult);
+    // } else if (rsi > overboughtThreshold) {
+    //   console.log('RSI indicates overbought, placing SELL order...');
+    //   orderResult = await placeOrder('sell', product_id, '0.001');
+    //   console.log('Sell order result:', orderResult);
+    // }
   
     // If an order was placed, store in `orders` table
     if (orderResult) {
-      const { id: orderId, status, side, size } = orderResult;
+      // Advanced Trade's response is shaped differently than old Pro.
+      // "order_id" is a top-level field. There's no immediate "status".
+      // You might want to store "orderResult.success" or "failure_reason", etc.
+      const { order_id, success } = orderResult;
+  
+      // For now, just store side, product_id, order_id, plus a basic "status" placeholder
       await pool.query(
         `INSERT INTO orders (product_id, side, order_id, status, size)
          VALUES ($1, $2, $3, $4, $5)`,
-        [product_id, side, orderId, status, size]
+        [
+          product_id,
+          orderResult.side || 'UNKNOWN_SIDE', // or you could store the side you passed in
+          order_id,
+          success ? 'SUCCESS' : 'FAILURE',
+          '0.001',
+        ]
       );
     }
   
@@ -153,5 +178,6 @@ async function rsiTradingLogicInternal(product_id) {
 
 module.exports = {
     rsiTradingLogic,
-    rsiTradingLogicInternal
+    rsiTradingLogicInternal,
+    placeOrder
 };
