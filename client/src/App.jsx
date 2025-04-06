@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-
+import CryptoBalances from './components/Cryptobalances';
 
 function App() {
   const [btcData, setBtcData] = useState(null);
@@ -115,14 +115,7 @@ function App() {
 
       <hr />
 
-      <h2>Your Crypto Balances</h2>
-      <ul>
-        {cryptoAccounts.map((acc) => (
-          <li key={acc.uuid}>
-            {acc.name}: {acc.available_balance.value} {acc.currency}
-          </li>
-        ))}
-      </ul>
+      <CryptoBalances accounts={cryptoAccounts} />
     </div>
   );
 }
