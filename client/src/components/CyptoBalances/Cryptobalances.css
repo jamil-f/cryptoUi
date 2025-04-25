@@ -1,0 +1,19 @@
+.crypto-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    padding: 16px;
+  }
+
+.crypto-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.crypto-percentage {
+    margin-top: 8px;
+    font-weight: bold;
+}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import CryptoBalances from './components/Cryptobalances';
+import CryptoBalances from './components/CyptoBalances/Cryptobalances';
 
 function App() {
   const [btcData, setBtcData] = useState(null);
@@ -114,7 +114,7 @@ function App() {
       <p>SOL Balance: {solBalance ?? 'Loading...'}</p>
 
       <hr />
-
+      <h2>Coinbase Advanced Portfolio</h2>
       <CryptoBalances accounts={cryptoAccounts} />
     </div>
   );
